@@ -18,7 +18,7 @@ import imagehash
 import hashlib
 from nonebot import on_message
 
-ADMIN_QQ_LIST = ["填入你的管理员QQ号"]
+ADMIN_QQ_LIST = ["397233276"]##管理员qq号
 
 # 可以自己改文案
 YUNSHI_DATA = {
