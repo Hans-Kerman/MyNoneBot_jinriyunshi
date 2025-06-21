@@ -223,24 +223,39 @@ async def _(event: MessageEvent):
     if user_id in today_cache:
         data = today_cache[user_id]
     else:
-        if random.random() < 0.7:
+        ##老的幸运值算法：
+        ##if random.random() < 0.7:
+        ##    a = random.randint(0, 2)
+        ##    b = random.randint(0, 2)
+        ##    c = random.randint(0, 2)
+        ##    d = random.randint(0, 2)
+        ##    level = a + b + c + d
+        ##else:
+        ##    level = random.randint(0, 8)
+        ##    while True:
+        ##        a = random.randint(0, 2)
+        ##        b = random.randint(0, 2)
+        ##        c = random.randint(0, 2)
+        ##        d = level - (a + b + c)
+        ##        if 0 <= d <= 2:
+        ##            break
+
+        #新的：
+        # 使用加权分布生成 level
+        weights = [1, 2, 4, 6, 8, 6, 4, 2, 1]  # 对应 level 0~8 的权重（峰值在5）
+        level = random.choices(range(9), weights=weights)[0]
+
+        # 按照总分拆解成 a~d 四项，每项范围仍为 0~2
+        while True:
             a = random.randint(0, 2)
             b = random.randint(0, 2)
             c = random.randint(0, 2)
-            d = random.randint(0, 2)
-            level = a + b + c + d
-        else:
-            level = random.randint(0, 8)
-            while True:
-                a = random.randint(0, 2)
-                b = random.randint(0, 2)
-                c = random.randint(0, 2)
-                d = level - (a + b + c)
-                if 0 <= d <= 2:
-                    break
+            d = level - (a + b + c)
+            if 0 <= d <= 2:
+                break
+
         text_index = random.randint(0, 2)
         stars = "★" * level + "☆" * (8 - level)
-
         data = {
             "level": level,
             "text_index": text_index,
@@ -249,17 +264,32 @@ async def _(event: MessageEvent):
         }
         today_cache[user_id] = data
         save_cache(today_cache)
-
+    
+    print("\n" + nickname + "运势是" + data["stars"] + "\n")
     level_info = YUNSHI_DATA[data["level"]]
     title = level_info["title"]
     text = data.get("text") if "text" in data else level_info["texts"][data["text_index"]]
 
     image_path = get_random_pool_image()
+    ##if image_path and os.path.exists(image_path):
+    ##    with open(image_path, "rb") as f:
+    ##        image_data = f.read()
+    ##    image_segment = Message("\n") + MessageSegment.image(image_data)
+    ##else:
+    ##    image_segment = Message("\n（图池为空或文件缺失，请联系管理员刷新）")
 
-    if image_path:
-        image_segment = Message("\n") + MessageSegment.image(f"file://{image_path}")
-    else:
-        image_segment = Message("\n（图池为空，请联系管理员刷新）")
+    def get_image_segment(image_path: str) -> Message:
+        """
+        构造一条包含图片的 Message 消息，自动处理路径前缀和异常。
+        """
+        if image_path and os.path.exists(image_path):
+            # 确保 file:// 开头，且为绝对路径
+            if not image_path.startswith("/"):
+                image_path = os.path.abspath(image_path)
+            file_uri = f"file://{image_path}"
+            return Message("\n") + MessageSegment.image(file_uri)
+        else:
+            return Message("\n（图池为空或文件缺失，请联系管理员刷新）")
 
     # 发送消息的排版
     msg = (
@@ -268,7 +298,7 @@ async def _(event: MessageEvent):
                 f"{data['stars']}\n"
                 f"{text}\n"
                 f"{data['detail']}")
-        + image_segment
+        + get_image_segment(image_path)
         + Message("仅供娱乐｜相信科学｜请勿迷信")
     )
 
