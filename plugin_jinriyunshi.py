@@ -102,6 +102,10 @@ def save_cache(data):
 
 today_cache = load_cache()
 today_date = datetime.date.today().isoformat()
+if today_cache.get("_date") != today_date:
+    print("📅 日期已变，更换今日运势缓存")
+    today_cache = {"_date": today_date}
+    save_cache(today_cache)
 
 ##看起来是定时拉取图片
 @scheduler.scheduled_job("cron", hour=3, minute=0)
@@ -263,6 +267,9 @@ async def _(event: MessageEvent):
             "detail": f"财运({a})+姻缘({b})+事业({c})+人品({d})"
         }
         today_cache[user_id] = data
+        today_cache["_date"] = today_date  # 每次保存都顺带更新 _date
+        save_cache(today_cache)
+
         save_cache(today_cache)
     
     print("\n" + nickname + "运势是" + data["stars"] + "\n")
