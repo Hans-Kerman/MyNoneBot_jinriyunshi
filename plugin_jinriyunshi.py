@@ -268,7 +268,7 @@ async def _(event: MessageEvent):
         }
         today_cache[user_id] = data
         today_cache["_date"] = today_date  # 每次保存都顺带更新 _date
-        save_cache(today_cache)
+        ##save_cache(today_cache)
 
         save_cache(today_cache)
     
