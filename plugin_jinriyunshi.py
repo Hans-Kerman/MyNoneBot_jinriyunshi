@@ -82,6 +82,7 @@ def get_random_pool_image():
 WALLHAVEN_TAGS = "genshin-impact OR honkai-star-rail OR zenless-zone-zero OR wuthering-waves OR punishing-gray-raven OR blue-archive OR arknights OR girls-frontline OR neural-cloud OR project-arklight OR snowbreak"
 HEADERS = {"User-Agent": "Mozilla/5.0"}
 POOL_DIR = os.path.join(os.path.dirname(__file__), "cache", "wallhaven_download")
+SHORT_POOL_LINK = "/srv/qqPic" 
 
 # 路径与缓存
 CACHE_DIR = os.path.join(os.path.dirname(__file__), "cache")
@@ -287,14 +288,13 @@ async def _(event: MessageEvent):
 
     def get_image_segment(image_path: str) -> Message:
         """
-        构造一条包含图片的 Message 消息，自动处理路径前缀和异常。
+        构造一条包含图片的 Message 消息，使用软链接路径
         """
         if image_path and os.path.exists(image_path):
-            # 确保 file:// 开头，且为绝对路径
-            if not image_path.startswith("/"):
-                image_path = os.path.abspath(image_path)
-            file_uri = f"file://{image_path}"
-            return Message("\n") + MessageSegment.image(file_uri)
+            # 使用软链接路径
+            filename = os.path.basename(image_path)
+            short_path = os.path.join(SHORT_POOL_LINK, filename)
+            return Message("\n") + MessageSegment.image(f"file://{short_path}")
         else:
             return Message("\n（图池为空或文件缺失，请联系管理员刷新）")
 
