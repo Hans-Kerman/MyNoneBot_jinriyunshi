@@ -286,31 +286,31 @@ async def _(event: MessageEvent):
     ##else:
     ##    image_segment = Message("\n（图池为空或文件缺失，请联系管理员刷新）")
 
-    def get_image_segment(image_path: str) -> Message:
-        """
-        构造一条包含图片的 Message 消息，使用软链接路径
-        """
+    async def send_image_segment(image_path: str):
         if image_path and os.path.exists(image_path):
             # 使用软链接路径
             filename = os.path.basename(image_path)
             short_path = os.path.join(SHORT_POOL_LINK, filename)
-            return Message("\n") + MessageSegment.image(f"file://{short_path}")
+            await yunshi_cmd.send(Message("\n") + MessageSegment.image(f"file://{short_path}"))
         else:
-            return Message("\n（图池为空或文件缺失，请联系管理员刷新）")
+            await yunshi_cmd.send(Message("\n（图池为空或文件缺失，请联系管理员刷新）"))
 
     # 发送消息的排版
-    msg = (
-        Message(f"@{nickname}，阁下的今日运势是：\n"
-                f"{title}\n"
-                f"{data['stars']}\n"
-                f"{text}\n"
-                f"{data['detail']}")
-        + get_image_segment(image_path)
+    text_msg = (
+        Message(f"@{nickname}，阁下的今日运势是：\n")
+        + Message(f"{title}\n")
+        + Message(f"{data['stars']}\n")
+        + Message(f"{text}\n")
+        + Message(f"{data['detail']}\n")
         + Message("仅供娱乐｜相信科学｜请勿迷信")
     )
-
-    await yunshi_cmd.finish(msg)
-
+    await yunshi_cmd.send(text_msg)
+    
+    # 再发送图片
+    await send_image_segment(image_path)
+    
+    # 结束处理
+    await yunshi_cmd.finish()
 # 以下未改动（定时任务和扩充图池命令）...
 # 保留原样代码即可
 
