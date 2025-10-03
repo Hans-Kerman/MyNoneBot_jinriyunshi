@@ -247,7 +247,8 @@ async def _(event: MessageEvent):
 
         #新的：
         # 使用加权分布生成 level
-        weights = [1, 2, 4, 6, 8, 6, 4, 2, 1]  # 对应 level 0~8 的权重（峰值在5）
+        #weights = [1, 2, 4, 6, 8, 6, 4, 2, 1]  # 对应 level 0~8 的权重（峰值在5）
+        weights = [1, 1, 1, 1, 1, 1, 1, 1, 1]  # 对应 level 0~8 的权重（峰值在5）
         level = random.choices(range(9), weights=weights)[0]
 
         # 按照总分拆解成 a~d 四项，每项范围仍为 0~2
@@ -313,6 +314,38 @@ async def _(event: MessageEvent):
     await yunshi_cmd.finish()
 # 以下未改动（定时任务和扩充图池命令）...
 # 保留原样代码即可
+
+change_luckiness = on_command("逆天改命", aliases={"nt", "NT", "逆天"}, priority=10, block=True)
+
+
+@change_luckiness.handle()
+async def _(event: MessageEvent):
+    if str(event.user_id) not in ADMIN_QQ_LIST:
+        await change_luckiness.send("重置得管理员来，小兔没权限，加班累垮(；一_一)⚙️")
+        return
+    else:
+        with open(CACHE_PATH, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        id_to_remove = []
+        id_to_remove.append(str(event.user_id))
+        print(f"已清除{id_to_remove}的数据")
+        # 逐个删除
+        for id in id_to_remove:
+            if id in data:  # 先检查键是否存在，避免 KeyError
+                del data[id]
+                del today_cache[id]
+                print(f"已清除{id}的数据")
+        
+        # 将修改后的数据写回文件
+        with open(CACHE_PATH, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=4)
+        
+        await change_luckiness.send("管理员操作已生效，运势数据库已按指令重置完毕⚙️\n天命钦定，百无禁忌✨")
+    
+eat_what = on_command("吃什么", aliases={"今天吃什么"}, priority=10, block=True)
+
+
+
 
 refresh_cmd = on_command("扩充图池", aliases={".扩充图池"}, priority=1, block=True)
 
