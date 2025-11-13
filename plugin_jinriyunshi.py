@@ -3,7 +3,6 @@ from nonebot import on_command
 from nonebot.matcher import Matcher
 from nonebot.adapters.onebot.v11 import MessageEvent, PrivateMessageEvent
 from nonebot.adapters.onebot.v11 import MessageSegment, Message
-from nonebot_plugin_apscheduler import scheduler
 from nonebot import logger
 ##from nonebot.permission import EVERYBODY
 import asyncio
@@ -18,8 +17,14 @@ from PIL import Image
 import imagehash
 import hashlib
 from nonebot import on_message
+from pathlib import Path
+
+#定时任务插件:
+import aiofiles
+from nonebot_plugin_apscheduler import scheduler
 
 ADMIN_QQ_LIST = ["397233276"]  # 管理员qq号
+
 
 # 原样保留
 YUNSHI_DATA = {
@@ -98,8 +103,15 @@ def load_cache():
     return {}
 
 def save_cache(data):
+    # 确保写入后强制落盘，防止被缓存
     with open(CACHE_PATH, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
+        f.flush()
+        try:
+            os.fsync(f.fileno())
+        except Exception:
+            # 某些环境（例如虚拟文件系统）可能不支持 fsync，忽略即可
+            pass
 
 today_cache = load_cache()
 today_date = datetime.date.today().isoformat()
@@ -107,6 +119,16 @@ if today_cache.get("_date") != today_date:
     print("📅 日期已变，更换今日运势缓存")
     today_cache = {"_date": today_date}
     save_cache(today_cache)
+
+# 定时清理运势数据缓存（每日0点自动执行）
+@scheduler.scheduled_job("cron", hour=0, minute=0)
+def clear_daily_yunshi_cache():
+    global today_cache, today_date
+    print("⏒ 自动清除今日运势缓存")
+    today_date = datetime.date.today().isoformat()
+    today_cache = {"_date": today_date}
+    save_cache(today_cache)
+    print(f"✅ 已清空今日运势缓存，_date 更新为 {today_date}")
 
 ##看起来是定时拉取图片
 @scheduler.scheduled_job("cron", hour=3, minute=0)
@@ -220,6 +242,10 @@ print("✅ 今日运势指令已加载")
 @yunshi_cmd.handle()
 async def _(event: MessageEvent):
     global today_cache
+    if today_cache.get("_date") != today_date:
+        print("📅 日期已变，更换今日运势缓存")
+        today_cache = {"_date": today_date}
+        save_cache(today_cache)
 
     user_id = str(event.user_id)
     nickname = event.sender.nickname or f"用户{user_id[-4:]}"   # fallback 名字
@@ -341,9 +367,6 @@ async def _(event: MessageEvent):
             json.dump(data, f, ensure_ascii=False, indent=4)
         
         await change_luckiness.send("管理员操作已生效，运势数据库已按指令重置完毕⚙️\n天命钦定，百无禁忌✨")
-    
-eat_what = on_command("吃什么", aliases={"今天吃什么"}, priority=10, block=True)
-
 
 
 
@@ -355,7 +378,7 @@ async def _(matcher: Matcher, event: MessageEvent):
         return
 
     if not isinstance(event, PrivateMessageEvent):
-        await matcher.finish("📢 请私聊我发送 `.扩充图池` 指令～")
+        await matcher.finish("📢 请私聊我发送 `~扩充图池` 指令～")
         return
 
     await matcher.send("🧹 正在扩充图池，请稍等...")
