@@ -276,6 +276,7 @@ async def _(event: MessageEvent):
         #weights = [1, 2, 4, 6, 8, 6, 4, 2, 1]  # 对应 level 0~8 的权重（峰值在5）
         weights = [1, 1, 1, 1, 1, 1, 1, 1, 1]  # 对应 level 0~8 的权重（峰值在5）
         level = random.choices(range(9), weights=weights)[0]
+        #level = 8
 
         # 按照总分拆解成 a~d 四项，每项范围仍为 0~2
         while True:
@@ -283,6 +284,10 @@ async def _(event: MessageEvent):
             b = random.randint(0, 2)
             c = random.randint(0, 2)
             d = level - (a + b + c)
+            #a = 2
+            #b = 2
+            #c = 2
+            #d = 2
             if 0 <= d <= 2:
                 break
 
@@ -318,6 +323,7 @@ async def _(event: MessageEvent):
             # 使用软链接路径
             filename = os.path.basename(image_path)
             short_path = os.path.join(SHORT_POOL_LINK, filename)
+            print(f"正在回应用户<blue>{nickname}({event.user_id})</blue>，图片路径: <green>{image_path}</green>")
             await yunshi_cmd.send(Message("\n") + MessageSegment.image(f"file://{short_path}"))
         else:
             await yunshi_cmd.send(Message("\n（图池为空或文件缺失，请联系管理员刷新）"))
@@ -335,6 +341,7 @@ async def _(event: MessageEvent):
     
     # 再发送图片
     await send_image_segment(image_path)
+
     
     # 结束处理
     await yunshi_cmd.finish()
